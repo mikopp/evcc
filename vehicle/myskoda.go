@@ -23,12 +23,13 @@ func init() {
 // NewMySkodaFromConfig creates a new vehicle
 func NewMySkodaFromConfig(other map[string]any) (api.Vehicle, error) {
 	cc := struct {
-		embed   `mapstructure:",squash"`
-		VIN     string
-		ApiKey  string
-		Sandbox bool
-		Cache   time.Duration
-		Timeout time.Duration
+		embed                   `mapstructure:",squash"`
+		VIN                     string
+		ApiKey                  string
+		Sandbox                 bool
+		PositionProfileDisabled bool
+		Cache                   time.Duration
+		Timeout                 time.Duration
 	}{
 		Cache:   interval,
 		Timeout: request.Timeout,
@@ -67,7 +68,7 @@ func NewMySkodaFromConfig(other map[string]any) (api.Vehicle, error) {
 	}
 	v.fromVehicle(res.Vehicle.Name, 0)
 
-	v.Provider = myskoda.NewProvider(apiC, cc.VIN, cc.Cache)
+	v.Provider = myskoda.NewProvider(apiC, cc.VIN, cc.Cache, !cc.PositionProfileDisabled)
 
 	return v, nil
 }

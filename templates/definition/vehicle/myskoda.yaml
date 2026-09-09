@@ -10,6 +10,17 @@ requirements:
 params:
   - preset: vehicle-common
   - preset: vehicle-online
+  - name: positionprofiledisabled
+    type: bool
+    advanced: true
+    description:
+      de: Ladegrenze des Ladestandorts deaktivieren
+      en: Disable charging location charge limit
+    help:
+      de: Die maximale Ladegrenze des aktuellen Ladestandorts ignorieren und stattdessen
+        die maximale Ladegrenze des Fahrzeugs verwenden.
+      en: Ignore the maximum charge limit of the vehicle's current charging location and
+        use the vehicle's own maximum charge limit instead.
   - name: welcomecharge
     advanced: true
   - name: apikey
@@ -35,6 +46,9 @@ render: |
   apikey: {{ .apikey }}
   {{- if .sandbox }}
   sandbox: true
+  {{- end }}
+  {{- if .positionprofiledisabled }}
+  positionprofiledisabled: true
   {{- end }}
   {{ include "common" . }}
   cache: {{ .cache }}

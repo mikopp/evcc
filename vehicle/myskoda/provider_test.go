@@ -110,3 +110,72 @@ func TestVehicleResponsePartErrors(t *testing.T) {
 	_, err = v.Odometer()
 	assert.ErrorIs(t, err, api.ErrNotAvailable)
 }
+
+func TestLimitSocPositionProfile(t *testing.T) {
+	sample := `{
+		"vehicle": {
+			"charging": {
+				"isVehicleInSavedLocation": true,
+				"status": { "state": "CHARGING", "battery": { "stateOfChargeInPercent": 41 } },
+				"settings": {
+					"autoUnlockPlugWhenCharged": "OFF",
+					"batteryCareModeTargetValueInPercent": 80,
+					"chargingCareMode": "ACTIVATED",
+					"maxChargeCurrentAc": "MAXIMUM",
+					"preferredChargeMode": "MANUAL",
+					"targetStateOfChargeInPercent": 80
+				}
+			},
+			"chargingProfiles": {
+				"profiles": [
+					{ "id": 2, "name": "Home", "settings": { "targetStateOfChargeInPercent": 100 } },
+					{ "id": 1, "name": "Work", "settings": { "targetStateOfChargeInPercent": 70 } }
+				],
+				"currentVehiclePositionProfile": {
+					"id": 2,
+					"name": "Home",
+					"targetStateOfChargeInPercent": 100
+				}
+			}
+		},
+		"errors": []
+	}`
+
+	var res VehicleResponse
+	require.NoError(t, json.Unmarshal([]byte(sample), &res))
+
+	v := &Provider{dataG: func() (VehicleResponse, error) { return res, nil }}
+
+	limit, err := v.GetLimitSoc()
+	require.NoError(t, err)
+	assert.Equal(t, int64(100), limit)
+
+	// away from the saved location the vehicle's own limit applies
+	res.Vehicle.Charging.IsVehicleInSavedLocation = false
+
+	limit, err = v.GetLimitSoc()
+	require.NoError(t, err)
+	assert.Equal(t, int64(80), limit)
+}
+
+func TestLimitSocProfilesUnsupported(t *testing.T) {
+	sample := `{
+		"vehicle": {
+			"charging": {
+				"isVehicleInSavedLocation": true,
+				"status": { "state": "CHARGING" },
+				"settings": { "targetStateOfChargeInPercent": 80 }
+			}
+		},
+		"errors": [{ "type": "CHARGING_PROFILES_UNSUPPORTED", "description": "Charging profiles are not supported." }]
+	}`
+
+	var res VehicleResponse
+	require.NoError(t, json.Unmarshal([]byte(sample), &res))
+
+	v := &Provider{dataG: func() (VehicleResponse, error) { return res, nil }}
+
+	limit, err := v.GetLimitSoc()
+	require.NoError(t, err)
+	assert.Equal(t, int64(80), limit)
+}
