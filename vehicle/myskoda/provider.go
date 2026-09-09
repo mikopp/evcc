@@ -134,9 +134,9 @@ func (v *Provider) GetLimitSoc() (int64, error) {
 		}
 	}
 
-	ch, err := v.charging()
-	if err != nil {
-		return 0, err
+	ch := res.Vehicle.Charging
+	if ch == nil || ch.Status == nil {
+		return 0, partError(res, "CHARGING")
 	}
 	if ch.Settings == nil || ch.Settings.TargetStateOfChargeInPercent == nil {
 		return 0, api.ErrNotAvailable
